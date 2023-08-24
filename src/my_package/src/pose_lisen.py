@@ -51,7 +51,6 @@ figure8 = [
 
 def callback(data):
     # This function gets called every time a new message arrives
-    # print(f'{rospy.get_caller_id()} I received {data}')
     x = data.transform.translation.x
     y = data.transform.translation.y
     z = data.transform.translation.z
@@ -59,6 +58,7 @@ def callback(data):
     rot_y = data.transform.rotation.y
     rot_z = data.transform.rotation.z
     rot_w = data.transform.rotation.w
+    # print(f'{rospy.get_caller_id()} I received {x, y, z, rot_x, rot_y, rot_z, rot_w}')
 
     # Set up a callback to handle data from QTM
     cf.extpos.send_extpose(x, y, z, rot_x, rot_y, rot_z, rot_w)
@@ -68,13 +68,7 @@ def callback(data):
 def listener():
     # Initialize the node with a name
 
-    # connect to crazytflie (cf object) through crazyradio
-    rospy.init_node('kris_crazyflie_publisher', anonymous=True)
-    print("Initialized node")
 
-    # Subscribe to the 'transform_topic' topic and register the callback
-    rospy.Subscriber('/vicon/kris_crazyflie/kris_crazyflie', TransformStamped, callback)
-    print("Subscribed to topic")
 
     # Spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
@@ -109,6 +103,28 @@ def upload_trajectory(cf, trajectory_id, trajectory):
     trajectory_mem.write_data_sync()
     cf.high_level_commander.define_trajectory(trajectory_id, 0, len(trajectory_mem.trajectory))
     return total_duration
+
+def run_sequence_basic(cf):
+    commander = cf.high_level_commander
+
+    commander.takeoff(1.0, 2.0)
+    time.sleep(6.0)
+    commander.land(0.0, 2.0)
+    time.sleep(2)
+    commander.stop()
+
+def run_sequence(cf, trajectory_id, duration):
+    commander = cf.high_level_commander
+
+    commander.takeoff(1.0, 2.0)
+    time.sleep(3.0)
+    relative = True
+    commander.start_trajectory(trajectory_id, 1.0, relative)
+    time.sleep(duration)
+    commander.land(0.0, 2.0)
+    time.sleep(2)
+    commander.stop()
+
 # def run_sequence(cf):
 #     commander = cf.high_level_commander
 
@@ -117,26 +133,6 @@ def upload_trajectory(cf, trajectory_id, trajectory):
 #     commander.land(0.0, 2.0)
 #     time.sleep(2)
 #     commander.stop()
-# def run_sequence(cf, trajectory_id, duration):
-    # commander = cf.high_level_commander
-
-    # commander.takeoff(1.0, 2.0)
-    # time.sleep(3.0)
-    # relative = True
-    # commander.start_trajectory(trajectory_id, 1.0, relative)
-    # time.sleep(duration)
-    # commander.land(0.0, 2.0)
-    # time.sleep(2)
-    # commander.stop()
-
-def run_sequence(cf):
-    commander = cf.high_level_commander
-
-    commander.takeoff(1.0, 2.0)
-    time.sleep(6.0)
-    commander.land(0.0, 2.0)
-    time.sleep(2)
-    commander.stop()
 
 # def send_extpose_rot_matrix(cf, x, y, z, rot):
 #     """
@@ -151,10 +147,13 @@ def run_sequence(cf):
 def wait_for_position_estimator(scf):
     print('Waiting for estimator to find position...')
 
-    log_config = LogConfig(name='Kalman Variance', period_in_ms=500)
+    log_config = LogConfig(name='Kalman Variance', period_in_ms=50)
     log_config.add_variable('kalman.varPX', 'float')
     log_config.add_variable('kalman.varPY', 'float')
     log_config.add_variable('kalman.varPZ', 'float')
+
+
+
 
     var_y_history = [1000] * 10
     var_x_history = [1000] * 10
@@ -192,7 +191,9 @@ def reset_estimator(cf):
     cf.param.set_value('kalman.resetEstimation', '1')
     time.sleep(0.1)
     cf.param.set_value('kalman.resetEstimation', '0')
-    wait_for_position_estimator(cf)
+    time.sleep(0.1)
+    cf.param.set_value('locSrv.extPosStdDev', '0.01')
+    # wait_for_position_estimator(cf)
 
 if __name__ == '__main__':
     cflib.crtp.init_drivers()
@@ -201,52 +202,41 @@ if __name__ == '__main__':
     with SyncCrazyflie(uri, cf=Crazyflie(rw_cache='./cache')) as scf:
         cf = scf.cf
         # print("Starting Listener" )
+
+            # connect to crazytflie (cf object) through crazyradio
+        rospy.init_node('kris_crazyflie_publisher', anonymous=True)
+        print("Initialized node")
+
+
+        # Subscribe to the 'transform_topic' topic and register the callback
+        rospy.Subscriber('/vicon/kris_crazyflie/kris_crazyflie', TransformStamped, callback)
+        print("Subscribed to topic")
+
         listener_thread = threading.Thread(target=listener)
         listener_thread.start()
         time.sleep(1)
 
-        # duration = upload_trajectory(cf, trajectory_id, figure8)def wait_for_position_estimator(scf):
-    print('Waiting for estimator to find position...')
+        log_config = LogConfig(name='Position', period_in_ms=50)
+        log_config.add_variable('stateEstimate.x', 'float')
+        log_config.add_variable('stateEstimate.y', 'float')
+        log_config.add_variable('stateEstimate.z', 'float')
 
-    log_config = LogConfig(name='Kalman Variance', period_in_ms=500)
-    log_config.add_variable('kalman.varPX', 'float')
-    log_config.add_variable('kalman.varPY', 'float')
-    log_config.add_variable('kalman.varPZ', 'float')
+        scf.cf.log.add_config(log_config)
+        def log_callback(timestamp, data, log_config):
+            print(f'Estimate: {timestamp}: {data}')
 
-    var_y_history = [1000] * 10
-    var_x_history = [1000] * 10
-    var_z_history = [1000] * 10
+        log_config.data_received_cb.add_callback(log_callback)
 
-    threshold = 0.001
+        log_config.start()
 
-    with SyncLogger(scf, log_config) as logger:
-        for log_entry in logger:
-            data = log_entry[1]
-
-            var_x_history.append(data['kalman.varPX'])
-            var_x_history.pop(0)
-            var_y_history.append(data['kalman.varPY'])
-            var_y_history.pop(0)
-            var_z_history.append(data['kalman.varPZ'])
-            var_z_history.pop(0)
-
-            min_x = min(var_x_history)
-            max_x = max(var_x_history)
-            min_y = min(var_y_history)
-            max_y = max(var_y_history)
-            min_z = min(var_z_history)
-            max_z = max(var_z_history)
-
-            # print("{} {} {}".
-            #       format(max_x - min_x, max_y - min_y, max_z - min_z))
-
-            if (max_x - min_x) < threshold and (
-                    max_y - min_y) < threshold and (
-                    max_z - min_z) < threshold:
-                break
         cf.param.set_value('commander.enHighLevel', '1')
+        adjust_orientation_sensitivity(cf)
+        activate_kalman_estimator(cf)
+        #duration = upload_trajectory(cf, 1, figure8)
         reset_estimator(cf)
-        run_sequence(cf)
+        #run_sequence(cf, 1, duration)
+        run_sequence_basic(cf)
+
 
 
 
