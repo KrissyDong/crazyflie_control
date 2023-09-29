@@ -1,0 +1,30 @@
+<launch>
+
+  <!-- Load the URDF into the ROS Parameter Server -->
+  <param name="robot_description" 
+         textfile="$(find my_package)/urdf/frame.urdf" />
+
+  <!-- Spawn a static robot state publisher -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
+        respawn="false" output="screen">
+  </node>
+
+  <!-- Launch RVIZ -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find my_package)/rviz/frame_config.rviz" 
+        required="true" />
+
+  <!-- Publish a static transform from map to base_link -->
+  <node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" 
+      args="0 0 0 0 0 0 map base_link 100" />
+
+  <!-- Publish a static transform from map to base_link -->
+  <node pkg="tf" type="static_transform_publisher" name="vicon_coordinate_to_map_broadcaster" 
+      args="0 0 0 0 0 0 map /vicon/world 100" />
+
+  <!-- Publish a static transform from map to base_link -->
+  <node pkg="tf" type="static_transform_publisher" name="world_to_map_broadcaster" 
+      args="0 0 0 0 0 0 map world 100" />
+
+
+
+</launch>

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<robot name="octagon_shape">
+
+    <link name="vicon/frame/frame">
+        <visual>
+            <geometry>
+                <mesh filename="package://my_package/meshes/frame.stl"/>
+            </geometry>
+            <material name="blue">
+                <color rgba="0 0 1 1"/> <!-- Color blue -->
+            </material>
+        </visual>
+
+        <collision>
+            <geometry>
+                <mesh filename="package://my_package/meshes/frame.stl"/>
+            </geometry>
+        </collision>
+    </link>
+
+</robot>

@@ -1,0 +1,10 @@
+digraph G {
+"vicon/world" -> "vicon/frame/frame"[label="Broadcaster: /vicon\nAverage rate: 120.042 Hz\nMost recent transform: 1694147118.655 ( 0.016 sec old)\nBuffer length: 4.998 sec\n"];
+"map" -> "vicon/world"[label="Broadcaster: /vicon_coordinate_to_map_broadcaster\nAverage rate: 10.185 Hz\nMost recent transform: 1694147118.704 ( -0.033 sec old)\nBuffer length: 4.909 sec\n"];
+"map" -> "world"[label="Broadcaster: /world_to_map_broadcaster\nAverage rate: 10.185 Hz\nMost recent transform: 1694147118.704 ( -0.034 sec old)\nBuffer length: 4.909 sec\n"];
+"map" -> "base_link"[label="Broadcaster: /map_to_base_broadcaster\nAverage rate: 10.185 Hz\nMost recent transform: 1694147118.704 ( -0.034 sec old)\nBuffer length: 4.909 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1694147118.671"[ shape=plaintext ] ;
+ }->"map";
+}
