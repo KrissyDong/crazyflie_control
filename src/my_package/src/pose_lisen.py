@@ -32,9 +32,10 @@ rot_z = 0
 rot_w = 0
 orientation_std_dev = 8.0e-3
 
+
 # URI to the Crazyflie to connect to
-# uri = uri_helper.uri_from_env(default='radio://0/80/1M/E7E7E7E7E7')
-uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705')
+uri = uri_helper.uri_from_env(default='radio://0/80/1M/E7E7E7E7E7')
+# uri = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705')
 
 
 
@@ -234,7 +235,7 @@ if __name__ == '__main__':
         # br = tf2_ros.TransformBroadcaster()
 
         # Subscribe to the 'transform_topic' topic and register the callback
-        rospy.Subscriber('/vicon/HSL_cf1/HSL_cf1', TransformStamped, callback)
+        rospy.Subscriber('vicon/crazy_2/crazy_2', TransformStamped, callback)
         print("Subscribed to topic")
 
         listener_thread = threading.Thread(target=listener)
