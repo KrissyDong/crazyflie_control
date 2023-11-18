@@ -1,3 +1,4 @@
 {
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "cmake.sourceDirectory": "/home/kris/catkin_ws/uav_trajectories/mav_trajectory_generation/mav_trajectory_generation"
 }
